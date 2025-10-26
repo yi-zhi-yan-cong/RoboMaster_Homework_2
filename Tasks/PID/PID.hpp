@@ -7,6 +7,8 @@ struct PidParams{
   float kp;
   float ki;
   float kd;
+  float integral_limit;   // 新增：积分限幅
+  float output_limit;     // 新增：输出限幅
 };
 
 struct PidData{
@@ -21,11 +23,12 @@ class Pid {
     ~Pid() = default;
     void setParams(PidParams &params);
     PidParams getParams(void);
-    float pidCalc(const float ref, const float fdb);
+    float pidCalc(const float ref, const float fdb, const float T);
   private:
     PidParams params_;
     PidData datas_;
     //PidData last_datas_;
+
 };
 
 #endif

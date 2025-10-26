@@ -17,8 +17,11 @@ uint32_t GM6020::rxId(void)
 void GM6020::setInput(float current)
 {
   input_ = current;
-  if(current > 3 || current < -3)
+  if(current > 3)
     input_ = 3;     /*电机最大转矩电流为3A*/
+  else if (current < -3)
+    input_ = -3;
+  
 }
 
 bool GM6020::encode(uint8_t *data) 

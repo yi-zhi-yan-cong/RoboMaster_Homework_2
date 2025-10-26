@@ -107,20 +107,34 @@ int main(void)
   MX_USART6_UART_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  CanFilter_Init(&hcan2);
+  CanFilter_Init(&hcan1);
+  HAL_CAN_Start(&hcan1);  // 启动CAN
+  HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);  // 启动接收中断
   HAL_TIM_Base_Start_IT(&htim6);
 
-  PidParams PidParams;
-  PidParams.kd = 0.5f;
-  PidParams.ki = 0.1f;
-  PidParams.kp = 0.01f;
-  Pid PID(PidParams);
+  PidParams current_pidparams;
+  current_pidparams.kp = 0.07f;
+  current_pidparams.ki = 0.005f;
+  current_pidparams.kd = 0.0f;
+  current_pidparams.integral_limit = 10.0f;
+  current_pidparams.output_limit = 10.0f;
+  Pid current_PID(current_pidparams);
+
+  PidParams speed_pidparams;
+  speed_pidparams.kp = 0.03f;
+  speed_pidparams.ki = 0.0f;
+  speed_pidparams.kd = 0.0f;
+  speed_pidparams.integral_limit = 10.0f;
+  speed_pidparams.output_limit = 2.0f;
+  Pid speed_PID(speed_pidparams);
 
 
 
-  uint32_t last_time = tick;
-  float output_expect = sin(2.0f * M_PI * 0.2f * tick);
-  float output_real = output_expect;
+  uint32_t last_speed_time = tick;
+  uint32_t last_current_time = tick;
+  float current_expect;
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -128,18 +142,32 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    if((tick - last_time) > 1){
-      float output_expect = sin(2.0f * M_PI * 0.2f * tick * 0.001f);
-      float output_PID = PID.pidCalc(output_expect, output_real);
-      motors[0].setInput(output_expect - output_PID);    //PID控制，写入电流
+  float T_speed = 0.01f;   // 外环周期 10ms
+  float T_current = 0.001f; // 内环周期 1ms
+
+  if ((tick - last_speed_time) >= 10)  // 外环：速度 PID
+    {
+      float speed_expect = 250 * sin(2 * M_PI * 0.2 * tick * 0.001);
+      float speed_real = motors[0].vel();
+
+      current_expect = speed_PID.pidCalc(speed_expect, speed_real, T_speed);
+
+      last_speed_time = tick;
+    }
+
+  if ((tick - last_current_time) >= 1)  // 内环：电流 PID
+    {
+      float current_real = motors[0].current();
+
+      float current_output = current_PID.pidCalc(current_expect, current_real, T_current);
+      motors[0].setInput(current_output);
 
       uint8_t can_data[8];
-      if(motors[0].encode(can_data) == false)
+      if (!motors[0].encode(can_data))
         Error_Handler();
-      CAN_Send_Msg(&hcan2, can_data, motors[1].txId(), 8);   //编码，发送
+      CAN_Send_Msg(&hcan1, can_data, motors[0].txId(), 8);
 
-      output_real = motors[0].current();   //迭代
-      last_time = tick;
+      last_current_time = tick;
     }
     /* USER CODE BEGIN 3 */
   }

@@ -10,20 +10,32 @@ PidParams Pid::getParams(void)
   return params_;
 }
 
-float Pid::pidCalc(const float ref, const float fdb)
-{
-  float T = 1;      /*GM6020电机刷新频率为1kHz，这里时间间隔取1ms = 0.001s*/
-  float error = ref - fdb;
 
-  float i_error = datas_.integral + error;
-  float d_error = error - datas_.last_error;
+float Pid::pidCalc(const float ref, const float fdb, const float T)
+{
+  float error = ref - fdb;
+  
+  float last_error = datas_.last_error;
+  float integral = datas_.integral + error * T;     
+  float derivative = (error - datas_.last_error) / T;
+
+  datas_.integral += integral;
+  if (datas_.integral > params_.integral_limit) 
+    datas_.integral = params_.integral_limit;
+  else if (datas_.integral < -params_.integral_limit) 
+    datas_.integral = -params_.integral_limit;
+  
 
   float output = params_.kp * error 
-                 + params_.ki * i_error * T
-                 + params_.kd * d_error / T;
-
-  datas_.integral = i_error;
+                 + params_.ki * integral 
+                 + params_.kd * derivative;
   datas_.last_error = error;
+
+
+  if (output > params_.output_limit) 
+    output = params_.output_limit;
+  else if (output < -params_.output_limit) 
+    output = -params_.output_limit;
 
   return output;
 }
