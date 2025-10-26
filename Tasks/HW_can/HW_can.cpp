@@ -14,6 +14,7 @@
  */
 /* Includes ------------------------------------------------------------------*/
 #include "HW_can.hpp"
+
 #include "stdint.h"
 
 /* Private macro -------------------------------------------------------------*/
@@ -23,6 +24,7 @@
 static CAN_RxHeaderTypeDef rx_header;
 static uint8_t can_rx_data[8];
 uint32_t pTxMailbox;
+
 
 /* External variables --------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -60,6 +62,7 @@ uint32_t can_rec_times = 0;
 uint32_t can_success_times = 0;
 uint32_t can_receive_data = 0;
 
+
 /**
  * @brief   CAN中断的回调函数，全部数据解析都在该函数中
  * @param   hcan为CAN句柄
@@ -73,6 +76,11 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
   {
     if (rx_header.StdId == 0x321) { // 帧头校验
                                      // 校验通过进行具体数据处理
+    }if (rx_header.StdId >= 0x205 && rx_header.StdId <= 0x20B){ //检测GM6020电机的帧头
+      uint8_t motor_id = rx_header.StdId - 0x204;  //计算电机id
+      if(motor_id >= 1 && motor_id <= 7){ 
+        motors[motor_id - 1].decode(can_rx_data);  //解密数据，并存放对应id的motors中
+      }
     }
   }
   HAL_CAN_ActivateNotification(
@@ -82,9 +90,9 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 /**
  * @brief   向can总线发送数据，抄官方的
  * @param   hcan为CAN句柄
- * @param	msg为发送数组首地址
- * @param	id为发送报文id
- * @param	len为发送数据长度（字节数）
+ * @param	  msg为发送数组首地址
+ * @param	  id为发送报文id
+ * @param	  len为发送数据长度（字节数）
  * @retval  none
  * @note    主控发送都是len=8字节，再加上帧间隔3位，理论上can总线1ms最多传输9帧
  **/

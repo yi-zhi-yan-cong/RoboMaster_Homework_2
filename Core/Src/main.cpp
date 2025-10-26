@@ -27,6 +27,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "HW_can.hpp"
+#include "GM6020.hpp"
+#include "PID.hpp"
 
 /* USER CODE END Includes */
 
@@ -48,7 +51,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+extern GM6020 motors[7];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
