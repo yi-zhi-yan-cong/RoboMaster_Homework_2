@@ -4,14 +4,14 @@
 GM6020 motors[7] = {1, 2, 3, 4, 5, 6, 7};   /*定义全局变量motors，用来存放各个电机的状态*/
 
 
-uint32_t txId(void)
+uint32_t GM6020::txId(void)
 {
     return 0x1FE;   /*使用电流控制，表头为0x1FE*/
 }
 
-uint32_t rxId(void)
+uint32_t GM6020::rxId(void)
 {
-    return 0x204 + 1;   /*电机id设置为1*/
+    return 0x204 + id_;   /*电机id设置为1*/
 }
 
 void GM6020::setInput(float current)

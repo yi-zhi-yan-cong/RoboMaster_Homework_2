@@ -30,6 +30,7 @@
 #include "HW_can.hpp"
 #include "GM6020.hpp"
 #include "PID.hpp"
+#include <math.h>
 
 /* USER CODE END Includes */
 
@@ -51,6 +52,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+uint32_t tick;  //全局变量tick，当前时间
 extern GM6020 motors[7];
 /* USER CODE END PV */
 
@@ -105,7 +107,20 @@ int main(void)
   MX_USART6_UART_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  CanFilter_Init(&hcan2);
+  HAL_TIM_Base_Start_IT(&htim6);
 
+  PidParams PidParams;
+  PidParams.kd = 0.5f;
+  PidParams.ki = 0.1f;
+  PidParams.kp = 0.01f;
+  Pid PID(PidParams);
+
+
+
+  uint32_t last_time = tick;
+  float output_expect = sin(2.0f * M_PI * 0.2f * tick);
+  float output_real = output_expect;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -113,7 +128,19 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+    if((tick - last_time) > 1){
+      float output_expect = sin(2.0f * M_PI * 0.2f * tick * 0.001f);
+      float output_PID = PID.pidCalc(output_expect, output_real);
+      motors[0].setInput(output_expect - output_PID);    //PID控制，写入电流
 
+      uint8_t can_data[8];
+      if(motors[0].encode(can_data) == false)
+        Error_Handler();
+      CAN_Send_Msg(&hcan2, can_data, motors[1].txId(), 8);   //编码，发送
+
+      output_real = motors[0].current();   //迭代
+      last_time = tick;
+    }
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -165,7 +192,11 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void  HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef   *htim) {
+  if (htim->Instance == TIM6) {	
+    tick ++;    //产生0.5ms的中断，每0.5mstick加1
+  }
+}
 /* USER CODE END 4 */
 
 /**

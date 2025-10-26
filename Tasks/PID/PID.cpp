@@ -12,7 +12,7 @@ PidParams Pid::getParams(void)
 
 float Pid::pidCalc(const float ref, const float fdb)
 {
-  float T = 0.001;      /*GM6020电机刷新频率为1kHz，这里时间间隔取1ms = 0.001s*/
+  float T = 1;      /*GM6020电机刷新频率为1kHz，这里时间间隔取1ms = 0.001s*/
   float error = ref - fdb;
 
   float i_error = datas_.integral + error;
