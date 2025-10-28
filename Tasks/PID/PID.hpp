@@ -7,13 +7,14 @@ struct PidParams{
   float kp;
   float ki;
   float kd;
-  float integral_limit;   // 新增：积分限幅
-  float output_limit;     // 新增：输出限幅
+  float integral_limit; 
+  float output_limit;  
 };
 
 struct PidData{
   float integral;
   float last_error;
+  float last_fdb;
 };
 
 class Pid {
@@ -27,7 +28,6 @@ class Pid {
   private:
     PidParams params_;
     PidData datas_;
-    //PidData last_datas_;
 
 };
 
